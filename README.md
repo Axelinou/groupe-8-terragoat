@@ -1,5 +1,3 @@
----
-
 # Projet DevSecOps – Groupe 8 – TerraGoat
 
 **Étudiants :** Clement VAUCLARE, Maxime GUILBAUD, Axel BARBESIER
@@ -7,7 +5,6 @@
 **Module :** DevSecOps
 **Intervenant :** Damien Montmoulinex
 
----
 
 # 1. Présentation du projet
 
