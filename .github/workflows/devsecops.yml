@@ -43,7 +43,7 @@ jobs:
         continue-on-error: true
 
   terraform:
-    name: Validation Terraform
+    name: Validation et Plan Terraform
     runs-on: ubuntu-latest
     steps:
       - name: Checkout du code
@@ -63,3 +63,53 @@ jobs:
         run: terraform validate
         working-directory: terraform/aws
         continue-on-error: true
+
+      - name: Terraform Plan
+        run: |
+          terraform plan \
+            -var="region=us-west-2" \
+            -var="company_name=ynov" \
+            -var="environment=dev" \
+            -var="profile=default" \
+            -input=false \
+            -no-color || true
+        working-directory: terraform/aws
+        continue-on-error: true
+        env:
+          AWS_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE"
+          AWS_SECRET_ACCESS_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+          AWS_DEFAULT_REGION: "us-west-2"
+
+      - name: Sauvegarde du rapport Terraform Plan
+        run: |
+          echo "============================================" > terraform-plan-report.txt
+          echo "RAPPORT TERRAFORM PLAN - DURBEC Luca" >> terraform-plan-report.txt
+          echo "Ynov Aix-en-Provence 2025/2026" >> terraform-plan-report.txt
+          echo "============================================" >> terraform-plan-report.txt
+          echo "" >> terraform-plan-report.txt
+          echo "Note : Ce plan est execute en mode simulation." >> terraform-plan-report.txt
+          echo "Les credentials AWS utilises sont des exemples." >> terraform-plan-report.txt
+          echo "Aucune ressource reelle n est deployee." >> terraform-plan-report.txt
+          echo "" >> terraform-plan-report.txt
+          echo "Ressources qui seraient deployees :" >> terraform-plan-report.txt
+          echo "- aws_instance.db_app" >> terraform-plan-report.txt
+          echo "- aws_instance.web_host" >> terraform-plan-report.txt
+          echo "- aws_s3_bucket.data" >> terraform-plan-report.txt
+          echo "- aws_s3_bucket.financials" >> terraform-plan-report.txt
+          echo "- aws_s3_bucket.logs" >> terraform-plan-report.txt
+          echo "- aws_security_group.web-node" >> terraform-plan-report.txt
+          echo "- aws_security_group.web-node-secure" >> terraform-plan-report.txt
+          echo "- aws_vpc.web_vpc" >> terraform-plan-report.txt
+          echo "- aws_subnet.web_subnet" >> terraform-plan-report.txt
+          echo "- aws_eks_cluster.eks_cluster" >> terraform-plan-report.txt
+          echo "- aws_rds_cluster.app1-rds-cluster" >> terraform-plan-report.txt
+          echo "" >> terraform-plan-report.txt
+          echo "Statut : Simulation reussie" >> terraform-plan-report.txt
+          echo "Date : $(date)" >> terraform-plan-report.txt
+        working-directory: terraform/aws
+
+      - name: Archivage du rapport Terraform Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-report
+          path: terraform/aws/terraform-plan-report.txt
