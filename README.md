@@ -1,13 +1,10 @@
----
-
 # Projet DevSecOps – Groupe 8 – TerraGoat
 
-**Étudiants :** Clement VAUCLARE, Maxime GUILBAUD, Axel BARBESIER
-**Formation :** Mastère Infrastructure 1 – Ynov Aix-en-Provence (2026)
-**Module :** DevSecOps
-**Intervenant :** Damien Montmoulinex
+* *Étudiants :* Clement VAUCLARE, Maxime GUILBAUD, Axel BARBESIER
+* *Formation :* Mastère Infrastructure 1 – Ynov Aix-en-Provence (2026)
+* *Module :* DevSecOps
+* *Intervenant :* Damien Montmoulinex
 
----
 
 # 1. Présentation du projet
 
