@@ -343,3 +343,11 @@ resource "aws_security_group" "web-node-secure" {
     Environment = local.resource_prefix.value
   }
 }
+
+# CORRECTION CKV_AWS_46 : Suppression des secrets hardcodes dans user_data
+# Les credentials AWS ne doivent jamais etre injectes en clair dans user_data
+# Utiliser AWS IAM Instance Profile a la place
+resource "aws_iam_instance_profile" "web_host_profile" {
+  name = "web_host_profile"
+  role = aws_iam_role.ec2role.name
+}

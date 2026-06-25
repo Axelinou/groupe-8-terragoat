@@ -422,3 +422,25 @@ output "db_endpoint" {
   value       = aws_db_instance.default.endpoint
 }
 
+
+# CORRECTION CKV_AWS_17 : RDS non accessible publiquement
+# CORRECTION CKV_AWS_16 : Chiffrement RDS active
+resource "aws_db_instance" "default_secure" {
+  identifier        = "default-secure"
+  engine            = "mysql"
+  engine_version    = "8.0"
+  instance_class    = "db.t3.micro"
+  username          = "admin"
+  password          = "changeme123!"
+  publicly_accessible = false
+  storage_encrypted   = true
+  multi_az            = true
+  backup_retention_period = 7
+  deletion_protection     = true
+  skip_final_snapshot     = false
+
+  tags = {
+    Name        = "default-secure"
+    Environment = "dev"
+  }
+}
