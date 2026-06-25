@@ -1,0 +1,73 @@
+name: Pipeline DevSecOps TerraGoat
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  checkov:
+    name: Analyse statique IaC - Checkov
+    runs-on: ubuntu-latest
+    steps:
+      
+name: Checkout du code
+      uses: actions/checkout@v3,
+
+      
+name: Installation de Checkov
+      run: pip install checkov,
+
+      
+name: Execution de Checkov
+      run: |
+        checkov -d terraform/ --output json > reports/checkov-report.json || true
+        checkov -d terraform/ --output cli,
+
+      
+name: Sauvegarde du rapport Checkov
+      uses: actions/upload-artifact@v3
+      with:
+        name: checkov-report
+        path: reports/checkov-report.json,
+
+  gitleaks:
+    name: Detection de secrets - Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      
+name: Checkout du code
+      uses: actions/checkout@v3,
+
+      
+name: Execution de Gitleaks
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      continue-on-error: true,
+
+  terraform:
+    name: Validation Terraform
+    runs-on: ubuntu-latest
+    steps:
+      
+name: Checkout du code
+      uses: actions/checkout@v3,
+
+      
+name: Installation de Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.5.7,
+
+      
+name: Terraform Init
+      run: terraform init -backend=false
+      working-directory: terraform/aws,
+
+      
+name: Terraform Validate
+      run: terraform validate
+      working-directory: terraform/aws,
