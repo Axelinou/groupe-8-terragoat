@@ -1,426 +1,404 @@
-# Gitleaks
+---
 
-```
-┌─○───┐
-│ │╲  │
-│ │ ○ │
-│ ○ ░ │
-└─░───┘
-```
+# Projet DevSecOps – Groupe 8 – TerraGoat
 
-<p align="left">
-  <p align="left">
-	  <a href="https://github.com/zricethezav/gitleaks/actions/workflows/test.yml">
-		  <img alt="Github Test" src="https://github.com/zricethezav/gitleaks/actions/workflows/test.yml/badge.svg">
-	  </a>
-	  <a href="https://hub.docker.com/r/zricethezav/gitleaks">
-		  <img src="https://img.shields.io/docker/pulls/zricethezav/gitleaks.svg" />
-	  </a>
-	  <a href="https://github.com/zricethezav/gitleaks-action">
-        	<img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">
-    	 </a>
-	  <a href="https://twitter.com/intent/follow?screen_name=zricethezav">
-		  <img src="https://img.shields.io/twitter/follow/zricethezav?label=Follow%20zricethezav&style=social&color=blue" alt="Follow @zricethezav" />
-	  </a>
-  </p>
-</p>
+**Étudiants :** Clement VAUCLARE, Maxime GUILBAUD, Axel BARBESIER
+**Formation :** Mastère Infrastructure 1 – Ynov Aix-en-Provence (2026)
+**Module :** DevSecOps
+**Intervenant :** Damien Montmoulinex
 
-### Join our Discord! [![Discord](https://img.shields.io/discord/1102689410522284044.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/8Hzbrnkr7E)
+---
 
-Gitleaks is a SAST tool for **detecting** and **preventing** hardcoded secrets like passwords, api keys, and tokens in git repos. Gitleaks is an **easy-to-use, all-in-one solution** for detecting secrets, past or present, in your code.
+# 1. Présentation du projet
 
-```
-➜  ~/code(master) gitleaks detect --source . -v
+Dans le cadre du module DevSecOps du Mastère Infrastructure d’Ynov Aix-en-Provence, ce projet a pour objectif de concevoir et déployer une chaîne CI/CD intégrant la sécurité à chaque étape du cycle de développement.
 
-    ○
-    │╲
-    │ ○
-    ○ ░
-    ░    gitleaks
+Pour cette mise en pratique, nous avons utilisé **TerraGoat**, un projet open source développé par Bridgecrew. Celui-ci contient volontairement de nombreuses vulnérabilités au sein de son infrastructure Terraform afin de reproduire des erreurs de configuration fréquemment rencontrées dans les environnements cloud réels.
 
+Les objectifs fixés étaient les suivants :
 
-Finding:     "export BUNDLE_ENTERPRISE__CONTRIBSYS__COM=cafebabe:deadbeef",
-Secret:      cafebabe:deadbeef
-RuleID:      sidekiq-secret
-Entropy:     2.609850
-File:        cmd/generate/config/rules/sidekiq.go
-Line:        23
-Commit:      cd5226711335c68be1e720b318b7bc3135a30eb2
-Author:      John
-Email:       john@users.noreply.github.com
-Date:        2022-08-03T12:31:40Z
-Fingerprint: cd5226711335c68be1e720b318b7bc3135a30eb2:cmd/generate/config/rules/sidekiq.go:sidekiq-secret:23
-```
+* Mettre en place une chaîne CI/CD complète avec GitHub Actions ;
+* Automatiser les analyses de sécurité de l’Infrastructure as Code (IaC) ;
+* Identifier les mauvaises configurations de sécurité ;
+* Corriger les vulnérabilités les plus critiques ;
+* Générer et conserver les rapports d’analyse ;
+* Documenter les risques détectés, les corrections réalisées et les bonnes pratiques appliquées.
 
-## Getting Started
+---
 
-Gitleaks can be installed using Homebrew, Docker, or Go. Gitleaks is also available in binary form for many popular platforms and OS types on the [releases page](https://github.com/zricethezav/gitleaks/releases). In addition, Gitleaks can be implemented as a pre-commit hook directly in your repo or as a GitHub action using [Gitleaks-Action](https://github.com/gitleaks/gitleaks-action).
+# 2. Environnement de travail
 
-### Installing
+## Système d’exploitation
 
-```bash
-# MacOS
-brew install gitleaks
+* Windows 11
+* WSL2 (Ubuntu)
 
-# Docker (DockerHub)
-docker pull zricethezav/gitleaks:latest
-docker run -v ${path_to_host_folder_to_scan}:/path zricethezav/gitleaks:latest [COMMAND] --source="/path" [OPTIONS]
+## Outils installés localement
 
-# Docker (ghcr.io)
-docker pull ghcr.io/gitleaks/gitleaks:latest
-docker run -v ${path_to_host_folder_to_scan}:/path ghcr.io/gitleaks/gitleaks:latest [COMMAND] --source="/path" [OPTIONS]
+* Python 3 / pip3
+* Checkov 3.3.2
+* Gitleaks 8.18.4
+* Terraform 1.5.7
+* Git 2.x
 
-# From Source
-git clone https://github.com/gitleaks/gitleaks.git
-cd gitleaks
-make build
-```
+## Dépôt et orchestration
 
-### GitHub Action
+* Dépôt GitHub : [https://github.com/Axelinou/groupe-8-terragoat](https://github.com/Axelinou/groupe-8-terragoat)
+* Orchestrateur CI/CD : GitHub Actions
 
-Check out the official [Gitleaks GitHub Action](https://github.com/gitleaks/gitleaks-action)
+---
 
-```
-name: gitleaks
-on: [pull_request, push, workflow_dispatch]
-jobs:
-  scan:
-    name: gitleaks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE}} # Only required for Organizations, not personal accounts.
-```
+# 3. Outils utilisés
 
-### Pre-Commit
+| Outil          | Version | Rôle                                   | Catégorie              |
+| -------------- | ------- | -------------------------------------- | ---------------------- |
+| Checkov        | 3.3.2   | Analyse statique du code Terraform     | SAST                   |
+| Gitleaks       | 8.18.4  | Détection de secrets dans le dépôt     | Secret Scanning        |
+| Terraform CLI  | 1.5.7   | Validation syntaxique de l’IaC         | Infrastructure as Code |
+| GitHub Actions | -       | Exécution et orchestration du pipeline | CI/CD                  |
 
-1. Install pre-commit from https://pre-commit.com/#install
-2. Create a `.pre-commit-config.yaml` file at the root of your repository with the following content:
+---
 
-   ```
-   repos:
-     - repo: https://github.com/gitleaks/gitleaks
-       rev: v8.16.1
-       hooks:
-         - id: gitleaks
-   ```
+# 4. Architecture du pipeline CI/CD
 
-   for a [native execution of GitLeaks](https://github.com/zricethezav/gitleaks/releases) or use the [`gitleaks-docker` pre-commit ID](https://github.com/zricethezav/gitleaks/blob/master/.pre-commit-hooks.yaml) for executing GitLeaks using the [official Docker images](#docker)
+Le pipeline est défini dans le fichier :
 
-3. Auto-update the config to the latest repos' versions by executing `pre-commit autoupdate`
-4. Install with `pre-commit install`
-5. Now you're all set!
+`.github/workflows/devsecops.yml`
 
-```
-➜ git commit -m "this commit contains a secret"
-Detect hardcoded secrets.................................................Failed
-```
+Il est exécuté automatiquement :
 
-Note: to disable the gitleaks pre-commit hook you can prepend `SKIP=gitleaks` to the commit command
-and it will skip running gitleaks
+* lors d’un **push** sur la branche `master` ;
+* lors d’une **Pull Request** vers la branche `master`.
 
-```
-➜ SKIP=gitleaks git commit -m "skip gitleaks check"
-Detect hardcoded secrets................................................Skipped
-```
+Les différents traitements sont répartis en trois jobs indépendants exécutés en parallèle.
 
-## Usage
+## Job 1 – Analyse statique IaC (Checkov)
 
-```
-Usage:
-  gitleaks [command]
+Étapes réalisées :
 
-Available Commands:
-  completion  generate the autocompletion script for the specified shell
-  detect      detect secrets in code
-  help        Help about any command
-  protect     protect secrets in code
-  version     display gitleaks version
+1. Récupération du code source ;
+2. Installation de Checkov ;
+3. Analyse du répertoire `terraform/` ;
+4. Génération d’un rapport JSON ;
+5. Archivage du rapport dans les Artifacts GitHub Actions.
 
-Flags:
-  -b, --baseline-path string       path to baseline with issues that can be ignored
-  -c, --config string              config file path
-                                   order of precedence:
-                                   1. --config/-c
-                                   2. env var GITLEAKS_CONFIG
-                                   3. (--source/-s)/.gitleaks.toml
-                                   If none of the three options are used, then gitleaks will use the default config
-      --exit-code int              exit code when leaks have been encountered (default 1)
-  -h, --help                       help for gitleaks
-  -l, --log-level string           log level (trace, debug, info, warn, error, fatal) (default "info")
-      --max-target-megabytes int   files larger than this will be skipped
-      --no-color                   turn off color for verbose output
-      --no-banner                  suppress banner
-      --redact                     redact secrets from logs and stdout
-  -f, --report-format string       output format (json, csv, junit, sarif) (default "json")
-  -r, --report-path string         report file
-  -s, --source string              path to source (default ".")
-  -v, --verbose                    show verbose output from scan
+## Job 2 – Détection de secrets (Gitleaks)
 
-Use "gitleaks [command] --help" for more information about a command.
+Étapes réalisées :
+
+1. Récupération du code source ;
+2. Analyse complète du dépôt ;
+3. Recherche de credentials et secrets exposés ;
+4. Affichage des résultats dans les logs CI.
+
+## Job 3 – Validation Terraform
+
+Étapes réalisées :
+
+1. Récupération du code source ;
+2. Installation de Terraform 1.5.7 ;
+3. Exécution de `terraform init` ;
+4. Exécution de `terraform validate`.
+
+---
+
+# 5. Résultats des analyses de sécurité
+
+## Analyse Checkov
+
+**Outil :** Checkov 3.3.2 (Prisma Cloud)
+
+**Périmètre analysé :**
+
+* AWS
+* Azure
+* GCP
+* AliCloud
+* Oracle Cloud
+
+### Résultats
+
+| Indicateur         | Nombre |
+| ------------------ | ------ |
+| Contrôles validés  | 203    |
+| Contrôles en échec | 467    |
+| Contrôles ignorés  | 0      |
+
+### Principales catégories de vulnérabilités détectées
+
+* Absence de chiffrement des données au repos ;
+* Ressources accessibles publiquement ;
+* Secrets et credentials codés en dur ;
+* Absence de mécanismes de journalisation et de supervision ;
+* Security Groups trop permissifs ;
+* Authentification IAM non activée ;
+* Absence de versioning sur les buckets ;
+* Mauvaise configuration des clusters Kubernetes ;
+* Bases de données exposées publiquement.
+
+---
+
+# 6. Secrets détectés par Gitleaks
+
+L’analyse du dépôt a permis d’identifier plusieurs secrets exposés.
+
+### terraform/aws/providers.tf
+
+**Type :** AWS Access Key hardcodée
+
+Valeur exposée :
+
+```text
+AKIAIOSFODNN7EXAMPLE
 ```
 
-### Commands
+**Autre détection :**
 
-There are two commands you will use to detect secrets; `detect` and `protect`.
+* Chaîne Base64 à forte entropie ;
+* Secret AWS présent dans la configuration du provider.
 
-#### Detect
+### terraform/aws/lambda.tf
 
-The `detect` command is used to scan repos, directories, and files. This command can be used on developer machines and in CI environments.
+Détections :
 
-When running `detect` on a git repository, gitleaks will parse the output of a `git log -p` command (you can see how this executed
-[here](https://github.com/zricethezav/gitleaks/blob/7240e16769b92d2a1b137c17d6bf9d55a8562899/git/git.go#L17-L25)).
-[`git log -p` generates patches](https://git-scm.com/docs/git-log#_generating_patch_text_with_p) which gitleaks will use to detect secrets.
-You can configure what commits `git log` will range over by using the `--log-opts` flag. `--log-opts` accepts any option for `git log -p`.
-For example, if you wanted to run gitleaks on a range of commits you could use the following command: `gitleaks detect --source . --log-opts="--all commitA..commitB"`.
-See the `git log` [documentation](https://git-scm.com/docs/git-log) for more information.
+* AWS Access Key hardcodée ;
+* Secret Base64 présent dans les variables d’environnement Lambda.
 
-You can scan files and directories by using the `--no-git` option.
+### terraform/aws/ec2.tf
 
-If you want to run only specific rules you can do so by using the `--enable-rule` option (with a rule ID as a parameter), this flag can be used multiple times. For example: `--enable-rule=atlassian-api-token` will only apply that rule. You can find a list of rules [here](config/gitleaks.toml).
+**Type :** AWS Access Key hardcodée dans le script `user_data`
 
-#### Protect
+Valeur exposée :
 
-The `protect` command is used to scan uncommitted changes in a git repo. This command should be used on developer machines in accordance with
-[shifting left on security](https://cloud.google.com/architecture/devops/devops-tech-shifting-left-on-security).
-When running `protect` on a git repository, gitleaks will parse the output of a `git diff` command (you can see how this executed
-[here](https://github.com/zricethezav/gitleaks/blob/7240e16769b92d2a1b137c17d6bf9d55a8562899/git/git.go#L48-L49)). You can set the
-`--staged` flag to check for changes in commits that have been `git add`ed. The `--staged` flag should be used when running Gitleaks
-as a pre-commit.
-
-**NOTE**: the `protect` command can only be used on git repos, running `protect` on files or directories will result in an error message.
-
-### Creating a baseline
-
-When scanning large repositories or repositories with a long history, it can be convenient to use a baseline. When using a baseline,
-gitleaks will ignore any old findings that are present in the baseline. A baseline can be any gitleaks report. To create a gitleaks report, run gitleaks with the `--report-path` parameter.
-
-```
-gitleaks detect --report-path gitleaks-report.json # This will save the report in a file called gitleaks-report.json
+```text
+AKIAIOSFODNN7EXAMAAA
 ```
 
-Once as baseline is created it can be applied when running the detect command again:
+Description :
 
-```
-gitleaks detect --baseline-path gitleaks-report.json --report-path findings.json
-```
+* Credentials AWS injectés en clair dans le script de démarrage EC2.
 
-After running the detect command with the --baseline-path parameter, report output (findings.json) will only contain new issues.
+### terraform/azure/sql.tf
 
-### Verify Findings
+Détection :
 
-You can verify a finding found by gitleaks using a `git log` command.
-Example output:
+* Secret Base64 à forte entropie présent dans la configuration SQL Azure.
 
-```
-Finding:     aws_secret="AKIAIMNOJVGFDXXXE4OA"
-RuleID:      aws-access-token
-Secret       AKIAIMNOJVGFDXXXE4OA
-Entropy:     3.65
-File:        checks_test.go
-Line:        37
-Commit:      ec2fc9d6cb0954fb3b57201cf6133c48d8ca0d29
-Author:      Zachary Rice
-Email:       z@email.com
-Date:        2018-01-28T17:39:00Z
-Fingerprint: ec2fc9d6cb0954fb3b57201cf6133c48d8ca0d29:checks_test.go:aws-access-token:37
-```
+---
 
-We can use the following format to verify the leak:
+# 7. Vulnérabilités critiques corrigées
 
-```
-git log -L {StartLine,EndLine}:{File} {Commit}
-```
+## 7.1 Clés AWS stockées en clair
 
-So in this example it would look like:
+### Informations
 
-```
-git log -L 37,37:checks_test.go ec2fc9d6cb0954fb3b57201cf6133c48d8ca0d29
-```
+* Checkov : CKV_AWS_41
+* Fichier : `terraform/aws/providers.tf`
+* Ressource : `aws.plain_text_access_keys_provider`
+* Criticité : Critique
 
-Which gives us:
+### Description
 
-```
-commit ec2fc9d6cb0954fb3b57201cf6133c48d8ca0d29
-Author: zricethezav <thisispublicanyways@gmail.com>
-Date:   Sun Jan 28 17:39:00 2018 -0500
+Les identifiants AWS étaient directement intégrés au code Terraform, permettant à toute personne ayant accès au dépôt de compromettre le compte AWS associé.
 
-    [update] entropy check
+### Correction apportée
 
-diff --git a/checks_test.go b/checks_test.go
---- a/checks_test.go
-+++ b/checks_test.go
-@@ -28,0 +37,1 @@
-+               "aws_secret= \"AKIAIMNOJVGFDXXXE4OA\"":          true,
+Suppression complète des clés d’accès du code source.
 
-```
+Les credentials sont désormais récupérés via :
 
-## Pre-Commit hook
+* Variables d’environnement ;
+* Fichier `~/.aws/credentials`.
 
-You can run Gitleaks as a pre-commit hook by copying the example `pre-commit.py` script into
-your `.git/hooks/` directory.
+### Bonne pratique
 
-## Configuration
+Ne jamais stocker de credentials dans le code source. Privilégier :
 
-Gitleaks offers a configuration format you can follow to write your own secret detection rules:
+* AWS IAM Roles ;
+* AWS Secrets Manager ;
+* Variables d’environnement sécurisées.
 
-```toml
-# Title for the gitleaks configuration file.
-title = "Gitleaks title"
+---
 
-# Extend the base (this) configuration. When you extend a configuration
-# the base rules take precedence over the extended rules. I.e., if there are
-# duplicate rules in both the base configuration and the extended configuration
-# the base rules will override the extended rules.
-# Another thing to know with extending configurations is you can chain together
-# multiple configuration files to a depth of 2. Allowlist arrays are appended
-# and can contain duplicates.
-# useDefault and path can NOT be used at the same time. Choose one.
-[extend]
-# useDefault will extend the base configuration with the default gitleaks config:
-# https://github.com/zricethezav/gitleaks/blob/master/config/gitleaks.toml
-useDefault = true
-# or you can supply a path to a configuration. Path is relative to where gitleaks
-# was invoked, not the location of the base config.
-path = "common_config.toml"
+## 7.2 Bucket S3 insuffisamment sécurisé
 
-# An array of tables that contain information that define instructions
-# on how to detect secrets
-[[rules]]
+### Informations
 
-# Unique identifier for this rule
-id = "awesome-rule-1"
+* Checks : CKV_AWS_19, CKV_AWS_21, CKV2_AWS_6
+* Fichier : `terraform/aws/s3.tf`
+* Ressource : `aws_s3_bucket.data`
+* Criticité : Haute
 
-# Short human readable description of the rule.
-description = "awesome rule 1"
+### Problèmes identifiés
 
-# Golang regular expression used to detect secrets. Note Golang's regex engine
-# does not support lookaheads.
-regex = '''one-go-style-regex-for-this-rule'''
+* Données non chiffrées ;
+* Versioning désactivé ;
+* Accès public autorisé ;
+* Absence de journaux d’accès.
 
-# Golang regular expression used to match paths. This can be used as a standalone rule or it can be used
-# in conjunction with a valid `regex` entry.
-path = '''a-file-path-regex'''
+### Correctifs appliqués
 
-# Array of strings used for metadata and reporting purposes.
-tags = ["tag","another tag"]
+1. Mise en place du chiffrement KMS ;
+2. Activation du versioning ;
+3. Blocage complet des accès publics ;
+4. Activation de la journalisation des accès.
 
-# Int used to extract secret from regex match and used as the group that will have
-# its entropy checked if `entropy` is set.
-secretGroup = 3
+### Bonne pratique
 
-# Float representing the minimum shannon entropy a regex group must have to be considered a secret.
-entropy = 3.5
+Tout bucket contenant des données sensibles doit :
 
-# Keywords are used for pre-regex check filtering. Rules that contain
-# keywords will perform a quick string compare check to make sure the
-# keyword(s) are in the content being scanned. Ideally these values should
-# either be part of the idenitifer or unique strings specific to the rule's regex
-# (introduced in v8.6.0)
-keywords = [
-  "auth",
-  "password",
-  "token",
-]
+* être privé ;
+* être chiffré ;
+* disposer du versioning ;
+* conserver les logs d’accès.
 
-# You can include an allowlist table for a single rule to reduce false positives or ignore commits
-# with known/rotated secrets
-[rules.allowlist]
-description = "ignore commit A"
-commits = [ "commit-A", "commit-B"]
-paths = [
-  '''go\.mod''',
-  '''go\.sum'''
-]
-# note: (rule) regexTarget defaults to check the _Secret_ in the finding.
-# if regexTarget is not specified then _Secret_ will be used.
-# Acceptable values for regexTarget are "match" and "line"
-regexTarget = "match"
-regexes = [
-  '''process''',
-  '''getenv''',
-]
-# note: stopwords targets the extracted secret, not the entire regex match
-# like 'regexes' does. (stopwords introduced in 8.8.0)
-stopwords = [
-  '''client''',
-  '''endpoint''',
-]
+---
 
+## 7.3 Security Group exposé à Internet
 
-# This is a global allowlist which has a higher order of precedence than rule-specific allowlists.
-# If a commit listed in the `commits` field below is encountered then that commit will be skipped and no
-# secrets will be detected for said commit. The same logic applies for regexes and paths.
-[allowlist]
-description = "global allow list"
-commits = [ "commit-A", "commit-B", "commit-C"]
-paths = [
-  '''gitleaks\.toml''',
-  '''(.*?)(jpg|gif|doc)'''
-]
+### Informations
 
-# note: (global) regexTarget defaults to check the _Secret_ in the finding.
-# if regexTarget is not specified then _Secret_ will be used.
-# Acceptable values for regexTarget are "match" and "line"
-regexTarget = "match"
+* Checks : CKV_AWS_24, CKV_AWS_260
+* Fichier : `terraform/aws/ec2.tf`
+* Ressource : `aws_security_group.web-node`
+* Criticité : Haute
 
-regexes = [
-  '''219-09-9999''',
-  '''078-05-1120''',
-  '''(9[0-9]{2}|666)-\d{2}-\d{4}''',
-]
-# note: stopwords targets the extracted secret, not the entire regex match
-# like 'regexes' does. (stopwords introduced in 8.8.0)
-stopwords = [
-  '''client''',
-  '''endpoint''',
-]
+### Description
+
+Le Security Group autorisait les connexions SSH (22) et HTTP (80) depuis l’ensemble d’Internet via la plage :
+
+```text
+0.0.0.0/0
 ```
 
-Refer to the default [gitleaks config](https://github.com/zricethezav/gitleaks/blob/master/config/gitleaks.toml) for examples or follow the [contributing guidelines](https://github.com/gitleaks/gitleaks/blob/master/CONTRIBUTING.md) if you would like to contribute to the default configuration. Additionally, you can check out [this gitleaks blog post](https://blog.gitleaks.io/stop-leaking-secrets-configuration-2-3-aeed293b1fbf) which covers advanced configuration setups.
+Cette configuration exposait l’instance à :
 
-### Additional Configuration
+* des attaques par force brute ;
+* des scans de ports ;
+* des tentatives d’intrusion.
 
-#### gitleaks:allow
+### Correction appliquée
 
-If you are knowingly committing a test secret that gitleaks will catch you can add a `gitleaks:allow` comment to that line which will instruct gitleaks
-to ignore that secret. Ex:
+Création d’un Security Group restreignant les accès administratifs au réseau interne :
 
+```text
+10.0.0.0/8
 ```
-class CustomClass:
-    discord_client_secret = '8dyfuiRyq=vVc3RRr_edRk-fK__JItpZ'  #gitleaks:allow
 
+### Bonne pratique
+
+Les ports d’administration (SSH, RDP) ne doivent jamais être ouverts publiquement.
+
+L’utilisation :
+
+* d’un bastion ;
+* ou d’un VPN
+
+doit être privilégiée.
+
+---
+
+# 8. Vulnérabilités identifiées mais non corrigées
+
+Certaines vulnérabilités n’ont pas été corrigées car leur traitement nécessite un environnement AWS réel déployé.
+
+| Check       | Fichier   | Description                          | Criticité |
+| ----------- | --------- | ------------------------------------ | --------- |
+| CKV_AWS_16  | db-app.tf | Chiffrement RDS absent               | Haute     |
+| CKV_AWS_17  | db-app.tf | Instance RDS publique                | Haute     |
+| CKV_AWS_37  | eks.tf    | Logs EKS désactivés                  | Haute     |
+| CKV_AWS_58  | eks.tf    | Chiffrement des secrets EKS absent   | Haute     |
+| CKV_AWS_161 | db-app.tf | IAM Authentication RDS désactivée    | Haute     |
+| CKV_AWS_84  | es.tf     | Logs Elasticsearch désactivés        | Moyenne   |
+| CKV_AWS_115 | lambda.tf | Limite de concurrence Lambda absente | Moyenne   |
+| CKV_AWS_157 | rds.tf    | Multi-AZ désactivé                   | Moyenne   |
+| CKV_AWS_92  | elb.tf    | Logs ELB désactivés                  | Moyenne   |
+| CKV_AWS_51  | ecr.tf    | Tags ECR non immuables               | Moyenne   |
+
+---
+
+# 9. Bonnes pratiques DevSecOps appliquées
+
+## Shift Left Security
+
+La sécurité est intégrée dès le début du cycle de développement grâce aux analyses automatiques déclenchées à chaque modification du code.
+
+## Gestion des secrets
+
+* Aucun credential ne doit être stocké dans le dépôt.
+* Utilisation de variables d’environnement et de gestionnaires de secrets.
+* Détection automatique via Gitleaks.
+
+## Principe du moindre privilège
+
+Les ressources ne disposent que des permissions strictement nécessaires à leur fonctionnement.
+
+## Chiffrement des données
+
+Toutes les données sensibles doivent être protégées :
+
+* au repos ;
+* en transit.
+
+## Traçabilité et audit
+
+* Journalisation activée ;
+* Archivage des rapports ;
+* Historique Git conservé.
+
+## Automatisation de la sécurité
+
+Les contrôles de sécurité sont exécutés automatiquement :
+
+* Checkov ;
+* Gitleaks ;
+* Terraform Validate.
+
+## Infrastructure as Code
+
+L’ensemble de l’infrastructure est :
+
+* versionné ;
+* auditable ;
+* reproductible.
+
+---
+
+# 10. Rapports de sécurité
+
+Les rapports sont générés automatiquement lors de chaque exécution du pipeline et stockés dans les Artifacts GitHub Actions.
+
+### Consultation
+
+1. Ouvrir l’onglet **Actions** du dépôt GitHub ;
+2. Sélectionner une exécution du pipeline ;
+3. Télécharger l’Artifact :
+
+```text
+checkov-report.json
 ```
 
-#### .gitleaksignore
+---
 
-You can ignore specific findings by creating a `.gitleaksignore` file at the root of your repo. In release v8.10.0 Gitleaks added a `Fingerprint` value to the Gitleaks report. Each leak, or finding, has a Fingerprint that uniquely identifies a secret. Add this fingerprint to the `.gitleaksignore` file to ignore that specific secret. See Gitleaks' [.gitleaksignore](https://github.com/zricethezav/gitleaks/blob/master/.gitleaksignore) for an example. Note: this feature is experimental and is subject to change in the future.
+# 11. Structure du dépôt
 
-## Sponsorships
-<p align="left">
-	<h3><a href="https://coderabbit.ai/?utm_source=oss&utm_medium=sponsorship&utm_campaign=gitleaks">coderabbit.ai</h3>
-	  <a href="https://coderabbit.ai/?utm_source=oss&utm_medium=sponsorship&utm_campaign=gitleaks">
-		  <img alt="CodeRabbit.ai Sponsorship" src="https://github.com/gitleaks/gitleaks/assets/15034943/76c30a85-887b-47ca-9956-17a8e55c6c41" width=200>
-	  </a>
-</p>
-<p align="left">
-	  <a href="https://www.tines.com/?utm_source=oss&utm_medium=sponsorship&utm_campaign=gitleaks">
-		  <img alt="Tines Sponsorship" src="https://user-images.githubusercontent.com/15034943/146411864-4878f936-b4f7-49a0-b625-f9f40c704bfa.png" width=200>
-	  </a>
-  </p>
+| Élément                           | Description                        |
+| --------------------------------- | ---------------------------------- |
+| `.github/workflows/devsecops.yml` | Pipeline CI/CD                     |
+| `docs/architecture.md`            | Architecture détaillée du pipeline |
+| `docs/vulnerabilites.md`          | Liste des vulnérabilités détectées |
+| `docs/corrections.md`             | Corrections appliquées             |
+| `docs/bonnes-pratiques.md`        | Bonnes pratiques DevSecOps         |
+| `reports/`                        | Rapports générés automatiquement   |
+| `terraform/`                      | Code TerraGoat d’origine           |
 
+---
 
-## Exit Codes
+# 12. Documentation complémentaire
 
-You can always set the exit code when leaks are encountered with the --exit-code flag. Default exit codes below:
+* `docs/architecture.md` : architecture détaillée du pipeline ;
+* `docs/vulnerabilites.md` : inventaire des vulnérabilités ;
+* `docs/corrections.md` : correctifs implémentés ;
+* `docs/bonnes-pratiques.md` : pratiques DevSecOps mises en œuvre.
 
-```
-0 - no leaks present
-1 - leaks or error encountered
-126 - unknown flag
-```
+---
