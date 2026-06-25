@@ -16,9 +16,10 @@ resource "alicloud_oss_bucket" "trail" {
     git_last_modified_at = "2022-04-05 15:14:28"
     git_last_modified_by = "james.woolfenden@gmail.com"
     git_modifiers        = "james.woolfenden"
-    git_org              = "bridgecrewio"
-    git_repo             = "terragoat"
+    git_org              = "Axelinou"
+    git_repo             = "groupe-8-terragoat"
     yor_trace            = "9ce7077b-8195-4e71-aec6-ed1f769555dc"
+    yor_name             = "trail"
   }
 }
 
@@ -41,4 +42,15 @@ resource "alicloud_ram_role" "trail" {
   }
   EOF
   force    = true
+  tags = {
+    git_commit           = "c2ff052009d49c65e6af551eb1506abc73b5976c"
+    git_file             = "terraform/alicloud/trail.tf"
+    git_last_modified_at = "2022-04-05 15:14:28"
+    git_last_modified_by = "james.woolfenden@gmail.com"
+    git_modifiers        = "james.woolfenden"
+    git_org              = "Axelinou"
+    git_repo             = "groupe-8-terragoat"
+    yor_name             = "trail"
+    yor_trace            = "f25210dc-7227-4ad7-b7ef-714d43685c25"
+  }
 }

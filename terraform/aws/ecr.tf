@@ -10,10 +10,12 @@ resource aws_ecr_repository "repository" {
     git_file             = "terraform/aws/ecr.tf"
     git_last_modified_at = "2023-04-27 12:47:51"
     git_last_modified_by = "nadler@paloaltonetworks.com"
-    git_modifiers        = "nadler/nimrodkor"
-    git_org              = "bridgecrewio"
-    git_repo             = "terragoat"
+    git_modifiers        = "nadler/nimrodkor/rotemavn"
+    git_org              = "Axelinou"
+    git_repo             = "groupe-8-terragoat"
     yor_trace            = "7a3ec657-fa54-4aa2-8467-5d08d6c90bc2"
+    }, {
+    yor_name = "repository"
   })
 }
 
