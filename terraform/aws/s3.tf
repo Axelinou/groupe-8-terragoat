@@ -139,3 +139,35 @@ resource "aws_s3_bucket" "logs" {
     yor_trace            = "01946fe9-aae2-4c99-a975-e9b0d3a4696c"
   })
 }
+
+# CORRECTION CKV_AWS_19, CKV_AWS_21, CKV2_AWS_6 : Chiffrement, versioning et blocage acces public
+# Applique sur le bucket data qui etait public et non chiffre
+resource "aws_s3_bucket_server_side_encryption_configuration" "data_encryption" {
+  bucket = aws_s3_bucket.data.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "aws:kms"
+    }
+  }
+}
+
+resource "aws_s3_bucket_versioning" "data_versioning" {
+  bucket = aws_s3_bucket.data.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "data_public_access_block" {
+  bucket                  = aws_s3_bucket.data.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_logging" "data_logging" {
+  bucket        = aws_s3_bucket.data.id
+  target_bucket = aws_s3_bucket.logs.id
+  target_prefix = "log/data/"
+}

@@ -306,3 +306,40 @@ output "public_subnet2" {
   description = "The ID of the Public subnet"
   value       = aws_subnet.web_subnet2.id
 }
+
+# CORRECTION CKV_AWS_24, CKV_AWS_260 : Restriction des regles du security group
+# Le port 22 (SSH) et le port 80 etaient ouverts a tout internet (0.0.0.0/0)
+resource "aws_security_group" "web-node-secure" {
+  name        = "${local.resource_prefix.value}-sg-secure"
+  description = "Security group securise - acces SSH et HTTP restreints"
+  vpc_id      = aws_vpc.web_vpc.id
+
+  ingress {
+    description = "HTTP depuis le reseau interne uniquement"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/8"]
+  }
+
+  ingress {
+    description = "SSH depuis le reseau interne uniquement"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/8"]
+  }
+
+  egress {
+    description = "Sortie autorisee"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "${local.resource_prefix.value}-sg-secure"
+    Environment = local.resource_prefix.value
+  }
+}
