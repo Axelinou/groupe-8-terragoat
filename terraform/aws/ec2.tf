@@ -1,7 +1,8 @@
 resource "aws_instance" "web_host" {
-  # ec2 have plain text secrets in user data
+  # CORRECTION CKV_AWS_46 : credentials via IAM Instance Profile
   ami           = "${var.ami}"
   instance_type = "t2.nano"
+  iam_instance_profile = aws_iam_instance_profile.web_host_profile.name
 
   vpc_security_group_ids = [
   "${aws_security_group.web-node.id}"]
@@ -12,9 +13,6 @@ sudo apt-get update
 sudo apt-get install -y apache2
 sudo systemctl start apache2
 sudo systemctl enable apache2
-export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMAAA
-export AWS_SECRET_ACCESS_KEY=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
-export AWS_DEFAULT_REGION=us-west-2
 echo "<h1>Deployed via Terraform</h1>" | sudo tee /var/www/html/index.html
 EOF
   tags = merge({
@@ -91,14 +89,14 @@ resource "aws_security_group" "web-node" {
     to_port   = 80
     protocol  = "tcp"
     cidr_blocks = [
-    "0.0.0.0/0"]
+    "10.0.0.0/8"]
   }
   ingress {
     from_port = 22
     to_port   = 22
     protocol  = "tcp"
     cidr_blocks = [
-    "0.0.0.0/0"]
+    "10.0.0.0/8"]
   }
   egress {
     from_port = 0
