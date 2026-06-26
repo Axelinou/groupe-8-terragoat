@@ -78,7 +78,7 @@ Checks corriges : CKV_AWS_24, CKV_AWS_260
 Date : 2025
 
 Probleme :
-Le security group autorisait les connexions SSH (port 22)
+Le security group web-node autorisait les connexions SSH (port 22)
 et HTTP (port 80) depuis n'importe quelle adresse IP (0.0.0.0/0),
 exposant l'instance EC2 a des attaques depuis internet.
 
@@ -92,16 +92,46 @@ Avant correction :
 
 Apres correction :
   ingress {
-    description = "SSH depuis le reseau interne uniquement"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["10.0.0.0/8"]
   }
 
+Le security group existant (web-node) a ete corrige directement
+pour restreindre les acces au reseau interne. Un security group
+supplementaire (web-node-secure) a egalement ete ajoute comme reference.
+
 Bonne pratique : Les ports SSH et RDP ne doivent jamais etre
 ouverts a tout internet. Limiter l'acces au reseau interne
 ou utiliser un bastion host.
+
+---
+
+## Correction 4 - Suppression des credentials dans user_data
+
+Fichier modifie : terraform/aws/ec2.tf
+Check corrige : CKV_AWS_46
+Date : 2026
+
+Probleme :
+Des credentials AWS etaient injectes en clair dans le script
+user_data de l'instance EC2 web_host, exposant les cles
+a toute personne ayant acces au code ou aux metadonnees de l'instance.
+
+Avant correction :
+  export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMAAA
+  export AWS_SECRET_ACCESS_KEY=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
+  export AWS_DEFAULT_REGION=us-west-2
+
+Apres correction :
+  Suppression des exports de credentials.
+  Ajout d'un IAM Instance Profile (aws_iam_instance_profile.web_host_profile)
+  rattache a l'instance EC2 pour fournir les credentials via IAM Role.
+
+Bonne pratique : Ne jamais injecter de credentials dans user_data.
+Utiliser des IAM Instance Profiles pour fournir les permissions
+aux instances EC2.
 
 ---
 

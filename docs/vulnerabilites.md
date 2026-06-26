@@ -63,8 +63,23 @@ Description : Le security group autorisait les connexions SSH (port 22)
 et HTTP (port 80) depuis n'importe quelle adresse IP (0.0.0.0/0).
 Cela expose l'instance EC2 a des attaques depuis internet.
 
-Correction : Creation d'un nouveau security group securise
-limitant l'acces SSH et HTTP au reseau interne (10.0.0.0/8).
+Correction : Restriction du security group existant (web-node)
+pour limiter l'acces SSH et HTTP au reseau interne (10.0.0.0/8).
+Ajout d'un security group securise supplementaire (web-node-secure).
+
+---
+
+### 4. CKV_AWS_46 - Credentials AWS dans user_data EC2
+
+Fichier : terraform/aws/ec2.tf
+Ressource : aws_instance.web_host
+Criticite : CRITIQUE
+
+Description : Des credentials AWS etaient injectes en clair dans
+le script de demarrage (user_data) de l'instance EC2.
+
+Correction : Suppression des credentials du user_data et ajout
+d'un IAM Instance Profile pour fournir les permissions via IAM Role.
 
 ---
 

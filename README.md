@@ -8,24 +8,24 @@
 
 # 1. Présentation du projet
 
-Dans le cadre du module DevSecOps du Mastère Infrastructure d’Ynov Aix-en-Provence, ce projet a pour objectif de concevoir et déployer une chaîne CI/CD intégrant la sécurité à chaque étape du cycle de développement.
+Dans le cadre du module DevSecOps du Mastère Infrastructure d'Ynov Aix-en-Provence, ce projet a pour objectif de concevoir et déployer une chaîne CI/CD intégrant la sécurité à chaque étape du cycle de développement.
 
 Pour cette mise en pratique, nous avons utilisé **TerraGoat**, un projet open source développé par Bridgecrew. Celui-ci contient volontairement de nombreuses vulnérabilités au sein de son infrastructure Terraform afin de reproduire des erreurs de configuration fréquemment rencontrées dans les environnements cloud réels.
 
 Les objectifs fixés étaient les suivants :
 
 * Mettre en place une chaîne CI/CD complète avec GitHub Actions ;
-* Automatiser les analyses de sécurité de l’Infrastructure as Code (IaC) ;
+* Automatiser les analyses de sécurité de l'Infrastructure as Code (IaC) ;
 * Identifier les mauvaises configurations de sécurité ;
 * Corriger les vulnérabilités les plus critiques ;
-* Générer et conserver les rapports d’analyse ;
+* Générer et conserver les rapports d'analyse ;
 * Documenter les risques détectés, les corrections réalisées et les bonnes pratiques appliquées.
 
 ---
 
 # 2. Environnement de travail
 
-## Système d’exploitation
+## Système d'exploitation
 
 * Windows 11
 * WSL2 (Ubuntu)
@@ -51,7 +51,7 @@ Les objectifs fixés étaient les suivants :
 | -------------- | ------- | -------------------------------------- | ---------------------- |
 | Checkov        | 3.3.2   | Analyse statique du code Terraform     | SAST                   |
 | Gitleaks       | 8.18.4  | Détection de secrets dans le dépôt     | Secret Scanning        |
-| Terraform CLI  | 1.5.7   | Validation syntaxique de l’IaC         | Infrastructure as Code |
+| Terraform CLI  | 1.5.7   | Validation syntaxique de l'IaC         | Infrastructure as Code |
 | GitHub Actions | -       | Exécution et orchestration du pipeline | CI/CD                  |
 
 ---
@@ -64,8 +64,8 @@ Le pipeline est défini dans le fichier :
 
 Il est exécuté automatiquement :
 
-* lors d’un **push** sur la branche `master` ;
-* lors d’une **Pull Request** vers la branche `master`.
+* lors d'un **push** sur la branche `master` ;
+* lors d'une **Pull Request** vers la branche `master`.
 
 Les différents traitements sont répartis en trois jobs indépendants exécutés en parallèle.
 
@@ -76,17 +76,18 @@ Les différents traitements sont répartis en trois jobs indépendants exécuté
 1. Récupération du code source ;
 2. Installation de Checkov ;
 3. Analyse du répertoire `terraform/` ;
-4. Génération d’un rapport JSON ;
+4. Génération d'un rapport JSON ;
 5. Archivage du rapport dans les Artifacts GitHub Actions.
 
 ## Job 2 – Détection de secrets (Gitleaks)
 
 Étapes réalisées :
 
-1. Récupération du code source ;
+1. Récupération du code source (avec historique complet) ;
 2. Analyse complète du dépôt ;
 3. Recherche de credentials et secrets exposés ;
-4. Affichage des résultats dans les logs CI.
+4. Génération d'un rapport au format SARIF ;
+5. Archivage du rapport dans les Artifacts GitHub Actions.
 
 ## Job 3 – Validation Terraform
 
@@ -95,7 +96,8 @@ Les différents traitements sont répartis en trois jobs indépendants exécuté
 1. Récupération du code source ;
 2. Installation de Terraform 1.5.7 ;
 3. Exécution de `terraform init` ;
-4. Exécution de `terraform validate`.
+4. Exécution de `terraform validate` ;
+5. Génération et archivage d'un rapport Terraform Plan.
 
 ---
 
@@ -137,7 +139,7 @@ Les différents traitements sont répartis en trois jobs indépendants exécuté
 
 # 6. Secrets détectés par Gitleaks
 
-L’analyse du dépôt a permis d’identifier plusieurs secrets exposés.
+L'analyse du dépôt a permis d'identifier plusieurs secrets exposés.
 
 ### terraform/aws/providers.tf
 
@@ -159,7 +161,7 @@ AKIAIOSFODNN7EXAMPLE
 Détections :
 
 * AWS Access Key hardcodée ;
-* Secret Base64 présent dans les variables d’environnement Lambda.
+* Secret Base64 présent dans les variables d'environnement Lambda.
 
 ### terraform/aws/ec2.tf
 
@@ -200,11 +202,11 @@ Les identifiants AWS étaient directement intégrés au code Terraform, permetta
 
 ### Correction apportée
 
-Suppression complète des clés d’accès du code source.
+Suppression complète des clés d'accès du code source.
 
 Les credentials sont désormais récupérés via :
 
-* Variables d’environnement ;
+* Variables d'environnement ;
 * Fichier `~/.aws/credentials`.
 
 ### Bonne pratique
@@ -213,7 +215,7 @@ Ne jamais stocker de credentials dans le code source. Privilégier :
 
 * AWS IAM Roles ;
 * AWS Secrets Manager ;
-* Variables d’environnement sécurisées.
+* Variables d'environnement sécurisées.
 
 ---
 
@@ -231,7 +233,7 @@ Ne jamais stocker de credentials dans le code source. Privilégier :
 * Données non chiffrées ;
 * Versioning désactivé ;
 * Accès public autorisé ;
-* Absence de journaux d’accès.
+* Absence de journaux d'accès.
 
 ### Correctifs appliqués
 
@@ -247,7 +249,7 @@ Tout bucket contenant des données sensibles doit :
 * être privé ;
 * être chiffré ;
 * disposer du versioning ;
-* conserver les logs d’accès.
+* conserver les logs d'accès.
 
 ---
 
@@ -262,42 +264,67 @@ Tout bucket contenant des données sensibles doit :
 
 ### Description
 
-Le Security Group autorisait les connexions SSH (22) et HTTP (80) depuis l’ensemble d’Internet via la plage :
+Le Security Group autorisait les connexions SSH (22) et HTTP (80) depuis l'ensemble d'Internet via la plage :
 
 ```text
 0.0.0.0/0
 ```
 
-Cette configuration exposait l’instance à :
+Cette configuration exposait l'instance à :
 
 * des attaques par force brute ;
 * des scans de ports ;
-* des tentatives d’intrusion.
+* des tentatives d'intrusion.
 
 ### Correction appliquée
 
-Création d’un Security Group restreignant les accès administratifs au réseau interne :
+Restriction du Security Group existant (web-node) pour limiter les accès au réseau interne :
 
 ```text
 10.0.0.0/8
 ```
 
+Un Security Group sécurisé supplémentaire (web-node-secure) a également été ajouté comme référence.
+
 ### Bonne pratique
 
-Les ports d’administration (SSH, RDP) ne doivent jamais être ouverts publiquement.
+Les ports d'administration (SSH, RDP) ne doivent jamais être ouverts publiquement.
 
-L’utilisation :
+L'utilisation :
 
-* d’un bastion ;
-* ou d’un VPN
+* d'un bastion ;
+* ou d'un VPN
 
 doit être privilégiée.
 
 ---
 
+## 7.4 Credentials AWS dans le user_data EC2
+
+### Informations
+
+* Check : CKV_AWS_46
+* Fichier : `terraform/aws/ec2.tf`
+* Ressource : `aws_instance.web_host`
+* Criticité : Critique
+
+### Description
+
+Des credentials AWS étaient injectés en clair dans le script de démarrage (user_data) de l'instance EC2, exposant les clés à toute personne ayant accès au code ou aux métadonnées de l'instance.
+
+### Correction appliquée
+
+Suppression des exports de credentials dans le user_data. Ajout d'un IAM Instance Profile (`aws_iam_instance_profile.web_host_profile`) rattaché à l'instance EC2 pour fournir les permissions via IAM Role.
+
+### Bonne pratique
+
+Ne jamais injecter de credentials dans user_data. Utiliser des IAM Instance Profiles pour fournir les permissions aux instances EC2.
+
+---
+
 # 8. Vulnérabilités identifiées mais non corrigées
 
-Certaines vulnérabilités n’ont pas été corrigées car leur traitement nécessite un environnement AWS réel déployé.
+Certaines vulnérabilités n'ont pas été corrigées car leur traitement nécessite un environnement AWS réel déployé.
 
 | Check       | Fichier   | Description                          | Criticité |
 | ----------- | --------- | ------------------------------------ | --------- |
@@ -323,7 +350,7 @@ La sécurité est intégrée dès le début du cycle de développement grâce au
 ## Gestion des secrets
 
 * Aucun credential ne doit être stocké dans le dépôt.
-* Utilisation de variables d’environnement et de gestionnaires de secrets.
+* Utilisation de variables d'environnement et de gestionnaires de secrets.
 * Détection automatique via Gitleaks.
 
 ## Principe du moindre privilège
@@ -353,7 +380,7 @@ Les contrôles de sécurité sont exécutés automatiquement :
 
 ## Infrastructure as Code
 
-L’ensemble de l’infrastructure est :
+L'ensemble de l'infrastructure est :
 
 * versionné ;
 * auditable ;
@@ -365,29 +392,32 @@ L’ensemble de l’infrastructure est :
 
 Les rapports sont générés automatiquement lors de chaque exécution du pipeline et stockés dans les Artifacts GitHub Actions.
 
+### Artifacts disponibles
+
+| Artifact              | Format | Contenu                              |
+| --------------------- | ------ | ------------------------------------ |
+| checkov-report        | JSON   | Résultats de l'analyse Checkov       |
+| gitleaks-report       | SARIF  | Secrets détectés par Gitleaks        |
+| terraform-plan-report | TXT    | Rapport de simulation Terraform Plan |
+
 ### Consultation
 
-1. Ouvrir l’onglet **Actions** du dépôt GitHub ;
+1. Ouvrir l'onglet **Actions** du dépôt GitHub ;
 2. Sélectionner une exécution du pipeline ;
-3. Télécharger l’Artifact :
-
-```text
-checkov-report.json
-```
+3. Télécharger les Artifacts souhaités.
 
 ---
 
 # 11. Structure du dépôt
 
-| Élément                           | Description                        |
-| --------------------------------- | ---------------------------------- |
-| `.github/workflows/devsecops.yml` | Pipeline CI/CD                     |
-| `docs/architecture.md`            | Architecture détaillée du pipeline |
-| `docs/vulnerabilites.md`          | Liste des vulnérabilités détectées |
-| `docs/corrections.md`             | Corrections appliquées             |
-| `docs/bonnes-pratiques.md`        | Bonnes pratiques DevSecOps         |
-| `reports/`                        | Rapports générés automatiquement   |
-| `terraform/`                      | Code TerraGoat d’origine           |
+| Élément                           | Description                           |
+| --------------------------------- | ------------------------------------- |
+| `.github/workflows/devsecops.yml` | Pipeline CI/CD                        |
+| `docs/architecture.md`            | Architecture détaillée du pipeline    |
+| `docs/vulnerabilites.md`          | Liste des vulnérabilités détectées    |
+| `docs/corrections.md`             | Corrections appliquées                |
+| `docs/bonnes-pratiques.md`        | Bonnes pratiques DevSecOps            |
+| `terraform/`                      | Code TerraGoat (IaC vulnérable)       |
 
 ---
 
